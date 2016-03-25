@@ -55,7 +55,6 @@ class assign_feedback_author extends assign_feedback_plugin
      * @return void
      */
     public function get_settings(MoodleQuickForm $mform) {
-        global $CFG, $COURSE;
         $defaultnotification = $this->get_config('notification');
 
         $name = get_string('notification', 'assignfeedback_author');
@@ -243,7 +242,7 @@ class assign_feedback_author extends assign_feedback_plugin
                     $coauthors = $data->assignfeedbackauthor_coauthors;
                 }
                 $array = array();
-                foreach ($coauthors as $key => $value) {
+                foreach (array_keys($coauthors) as $key) {
                     $array[] = $key;
                 }
                 $coauthors = $array;
@@ -292,7 +291,7 @@ class assign_feedback_author extends assign_feedback_plugin
      * @param stdClass $grade
      */
     private function set_author_feedback_for_coauthors($coauthors, $mode, $grade) {
-        foreach ($coauthors as $key => $coauthor) {
+        foreach (array_values($coauthors) as $coauthor) {
             $userarr = array(
                 $coauthor
             );
@@ -391,7 +390,6 @@ class assign_feedback_author extends assign_feedback_plugin
             $userarr = array(
                 $userto->id
             );
-            $temp = array_diff($coauthors, $userarr);
             $a->coauthors = implode(', ', $this->get_author_array(implode(',', $coauthors)));
             $message = $subject . ': ' . get_string('message', 'assignfeedback_author', $a);
             $eventdata = new stdClass();
@@ -496,7 +494,6 @@ class assign_feedback_author extends assign_feedback_plugin
             $DB->insert_record('assign_grades', $assigngrade);
         }
         $assigngrade = $this->get_assign_grade($grade->assignment, $userid);
-        $flags = $this->assignment->get_user_flags($userid, true);
         $this->assignment->notify_grade_modified($assigngrade);
     }
 
