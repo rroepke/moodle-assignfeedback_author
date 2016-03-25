@@ -22,7 +22,6 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-
 defined('MOODLE_INTERNAL') || die();
 
 /**
@@ -41,7 +40,7 @@ function xmldb_assignfeedback_author_install() {
     $pluginmanager->move_plugin('file', 'down');
     $pluginmanager->move_plugin('file', 'down');
     $pluginmanager->move_plugin('file', 'down');
-    
+
     return true;
 }
 
