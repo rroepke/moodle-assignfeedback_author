@@ -17,9 +17,11 @@
 /**
  * Strings for component 'feedback_author', language 'de'
  *
- * @package assignfeedback_author
- * @copyright 2013 Rene Roepke
- * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package     assignfeedback_author
+ * @author      Rene Roepke
+ * @author      Guido Roessling
+ * @copyright   2013 Rene Roepke
+ * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 $string['author'] = 'Autorengruppen';
 $string['coauthors'] = 'Co-Autoren';

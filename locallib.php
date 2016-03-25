@@ -18,9 +18,11 @@
  * This file contains the definition for the library class for author feedback plugin
  *
  *
- * @package assignfeedback_author
- * @copyright 2013 Rene Roepke
- * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package     assignfeedback_author
+ * @author      Rene Roepke
+ * @author      Guido Roessling
+ * @copyright   2013 Rene Roepke
+ * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 defined('MOODLE_INTERNAL') || die();
 
@@ -71,7 +73,8 @@ class assign_feedback_author extends assign_feedback_plugin
      * @return bool
      */
     public function save_settings(stdClass $data) {
-        $this->set_config('notification', isset($data->assignfeedbackauthor_notification) ? $data->assignfeedbackauthor_notification : 0);
+        $checknotification = isset($data->assignfeedbackauthor_notification);
+        $this->set_config('notification', $checknotification ? $data->assignfeedbackauthor_notification : 0);
         return true;
     }
 
@@ -123,26 +126,43 @@ class assign_feedback_author extends assign_feedback_plugin
                 $coauthors = $this->get_author_array($coauthors, true);
                 $userarr[$userid] = '';
                 $coauthors = array_diff_key($coauthors, $userarr);
-                $mform->addElement('checkbox', 'assignfeedbackauthor_feedbackforall', '', get_string('feedbackforall', 'assignfeedback_author'), 1);
+                $mform->addElement('checkbox', 'assignfeedbackauthor_feedbackforall', '',
+                    get_string('feedbackforall', 'assignfeedback_author'), 1);
                 $mform->addElement('static', '', '', implode(', ', $coauthors));
                 $mform->addElement('static', '', '', '');
-                $mform->addElement('checkbox', 'assignfeedbackauthor_feedbackforsel', '', get_string('feedbackforsel', 'assignfeedback_author'), 1);
+                $mform->addElement('checkbox', 'assignfeedbackauthor_feedbackforsel', '',
+                    get_string('feedbackforsel', 'assignfeedback_author'), 1);
 
                 $objs = array();
                 foreach ($coauthors as $key => $value) {
-                    $objs[$key] = &$mform->createElement('checkbox', 'assignfeedbackauthor_coauthors[' . $key . ']', '', $value, null);
-                    $mform->disabledIf('assignfeedbackauthor_coauthors[' . $key . ']', 'assignfeedbackauthor_feedbackforsel', 'notchecked');
+                    $objs[$key] = &$mform->createElement('checkbox', 'assignfeedbackauthor_coauthors[' . $key . ']', '',
+                        $value, null);
+                    $mform->disabledIf('assignfeedbackauthor_coauthors[' . $key . ']',
+                        'assignfeedbackauthor_feedbackforsel', 'notchecked');
                 }
                 $mform->addElement('group', '', get_string('coauthors', 'assignfeedback_author'), $objs, ' ', false);
                 $mform->addElement('static', '', '', '');
-                $mform->addElement('checkbox', 'assignfeedbackauthor_feedbackforno', '', get_string('feedbackforno', 'assignfeedback_author'), 1);
+                $mform->addElement('checkbox', 'assignfeedbackauthor_feedbackforno', '',
+                    get_string('feedbackforno', 'assignfeedback_author'), 1);
 
-                $mform->disabledIf('assignfeedbackauthor_feedbackforall', 'assignfeedbackauthor_feedbackforsel', 'checked');
-                $mform->disabledIf('assignfeedbackauthor_feedbackforall', 'assignfeedbackauthor_feedbackforno', 'checked');
-                $mform->disabledIf('assignfeedbackauthor_feedbackforsel', 'assignfeedbackauthor_feedbackforall', 'checked');
-                $mform->disabledIf('assignfeedbackauthor_feedbackforsel', 'assignfeedbackauthor_feedbackforno', 'checked');
-                $mform->disabledIf('assignfeedbackauthor_feedbackforno', 'assignfeedbackauthor_feedbackforall', 'checked');
-                $mform->disabledIf('assignfeedbackauthor_feedbackforno', 'assignfeedbackauthor_feedbackforsel', 'checked');
+                $mform->disabledIf('assignfeedbackauthor_feedbackforall',
+                    'assignfeedbackauthor_feedbackforsel',
+                    'checked');
+                $mform->disabledIf('assignfeedbackauthor_feedbackforall',
+                    'assignfeedbackauthor_feedbackforno',
+                    'checked');
+                $mform->disabledIf('assignfeedbackauthor_feedbackforsel',
+                    'assignfeedbackauthor_feedbackforall',
+                    'checked');
+                $mform->disabledIf('assignfeedbackauthor_feedbackforsel',
+                    'assignfeedbackauthor_feedbackforno',
+                    'checked');
+                $mform->disabledIf('assignfeedbackauthor_feedbackforno',
+                    'assignfeedbackauthor_feedbackforall',
+                    'checked');
+                $mform->disabledIf('assignfeedbackauthor_feedbackforno',
+                    'assignfeedbackauthor_feedbackforsel',
+                    'checked');
             }
             if ($grade) {
                 $authorfeedback = $this->get_author_feedback($assignment->id, $grade->id);
@@ -166,11 +186,6 @@ class assign_feedback_author extends assign_feedback_plugin
                             break;
                     }
                 }
-                // else{
-                // foreach ($coauthors as $key => $value) {
-                // $mform->setDefault('assignfeedbackauthor_coauthors[' . $key . ']', 'checked');
-                // }
-                // }
             } else {
                 $mform->setDefault('assignfeedbackauthor_feedbackforno', 'checked');
             }
@@ -320,7 +335,6 @@ class assign_feedback_author extends assign_feedback_plugin
                     $commentsfeedback->commentformat = $format;
                     $DB->insert_record('assignfeedback_' . ASSIGNFEEDBACK_COMMENTS, $commentsfeedback);
                 }
-                // var_dump("assignment: ".$assignment);
                 $gradeitem = $DB->get_record('grade_items', array(
                     'iteminstance' => $assignment,
                     'itemmodule' => 'assign'
@@ -330,7 +344,6 @@ class assign_feedback_author extends assign_feedback_plugin
                         'userid' => $coauthor
                     )) == 0
                 ) {
-                    // var_dump($gradeuserid);
                     $record = $DB->get_record('grade_grades', array(
                         'itemid' => $gradeitem->id,
                         'userid' => $gradeuserid
@@ -339,15 +352,12 @@ class assign_feedback_author extends assign_feedback_plugin
                     $record->userid = $coauthor;
                     $record->feedback = $text;
                     $record->feedbackformat = $format;
-                    // var_dump($record);
                     $DB->insert_record('grade_grades', $record);
                 } else {
                     $entry = $DB->get_record('grade_grades', array(
                         'itemid' => $gradeitem->id,
                         'userid' => $coauthor
                     ));
-                    // var_dump("gradeitem->id: ".$gradeitem->id);
-                    // var_dump($entry);
                     $entry->feedback = $text;
                     $entry->feedbackformat = $format;
                     $DB->update_record('grade_grades', $entry);
@@ -369,7 +379,9 @@ class assign_feedback_author extends assign_feedback_plugin
         $a = new stdClass();
         $a->courseurl = $CFG->wwwroot . '/course/view.php?id=' . $course->id;
         $a->coursename = $course->fullname;
-        $a->assignmentname = format_string($this->assignment->get_instance()->name, true, array('context' => $this->assignment->get_context()));
+        $a->assignmentname = format_string($this->assignment->get_instance()->name,
+            true,
+            array('context' => $this->assignment->get_context()));
         $a->assignmenturl = $CFG->wwwroot . '/mod/assign/view.php?id=' . $this->assignment->get_course_module()->id;
         $a->grader = fullname($USER);
         $subject = get_string('subject', 'assignfeedback_author', $a);
@@ -412,11 +424,11 @@ class assign_feedback_author extends assign_feedback_plugin
      */
     private function set_author_feedback($userid, $coauthors, $mode, $grade) {
         global $DB;
-        $assign_grade = $DB->get_record('assign_grades', array(
+        $assigngrade = $DB->get_record('assign_grades', array(
             'assignment' => $grade->assignment,
             'userid' => $userid
         ));
-        $authorfeedback = $this->get_author_feedback($grade->assignment, $assign_grade->id);
+        $authorfeedback = $this->get_author_feedback($grade->assignment, $assigngrade->id);
         if ($authorfeedback) {
             $authorfeedback->mode = $mode;
             $authorfeedback->coauthors = $coauthors;
@@ -424,7 +436,7 @@ class assign_feedback_author extends assign_feedback_plugin
         } else {
             $authorfeedback = new stdClass();
             $authorfeedback->assignment = $grade->assignment;
-            $authorfeedback->grade = $assign_grade->id;
+            $authorfeedback->grade = $assigngrade->id;
             $authorfeedback->mode = $mode;
             $authorfeedback->coauthors = $coauthors;
             $DB->insert_record('assignfeedback_author', $authorfeedback);
@@ -466,28 +478,26 @@ class assign_feedback_author extends assign_feedback_plugin
      */
     private function set_assign_grade($userid, $grade) {
         global $DB;
-        $assign_grade = $this->get_assign_grade($grade->assignment, $userid);
-        if ($assign_grade) {
-            $assign_grade->timecreated = $grade->timecreated;
-            $assign_grade->timemodified = time();
-            $assign_grade->grader = $grade->grader;
-            $assign_grade->grade = $grade->grade;
-            // $assign_grade->attemptnumber = $grade->attemptnumber;
-            $DB->update_record('assign_grades', $assign_grade);
+        $assigngrade = $this->get_assign_grade($grade->assignment, $userid);
+        if ($assigngrade) {
+            $assigngrade->timecreated = $grade->timecreated;
+            $assigngrade->timemodified = time();
+            $assigngrade->grader = $grade->grader;
+            $assigngrade->grade = $grade->grade;
+            $DB->update_record('assign_grades', $assigngrade);
         } else {
-            $assign_grade = new stdClass();
-            $assign_grade->assignment = $grade->assignment;
-            $assign_grade->userid = $userid;
-            $assign_grade->timecreated = time();
-            $assign_grade->timemodified = time();
-            $assign_grade->grader = $grade->grader;
-            $assign_grade->grade = $grade->grade;
-            // $assign_grade->attemptnumber = $grade->attemptnumber;
-            $DB->insert_record('assign_grades', $assign_grade);
+            $assigngrade = new stdClass();
+            $assigngrade->assignment = $grade->assignment;
+            $assigngrade->userid = $userid;
+            $assigngrade->timecreated = time();
+            $assigngrade->timemodified = time();
+            $assigngrade->grader = $grade->grader;
+            $assigngrade->grade = $grade->grade;
+            $DB->insert_record('assign_grades', $assigngrade);
         }
-        $assign_grade = $this->get_assign_grade($grade->assignment, $userid);
+        $assigngrade = $this->get_assign_grade($grade->assignment, $userid);
         $flags = $this->assignment->get_user_flags($userid, true);
-        $this->assignment->notify_grade_modified($assign_grade);
+        $this->assignment->notify_grade_modified($assigngrade);
     }
 
     /**
