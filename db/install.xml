@@ -4,7 +4,7 @@
     xsi:noNamespaceSchemaLocation="../../../../../lib/xmldb/xmldb.xsd"
 >
   <TABLES>
-    <TABLE NAME="assignfeedback_author" COMMENT="Stores info about the number of files submitted by a student.">
+    <TABLE NAME="assignfeedback_author" COMMENT="Stores feedback for a submission by a self-chosen group of students.">
       <FIELDS>
         <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
         <FIELD NAME="assignment" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
