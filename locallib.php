@@ -28,6 +28,12 @@ defined('MOODLE_INTERNAL') || die();
 
 define('ASSIGNFEEDBACK_COMMENTS', 'comments');
 
+require_once($CFG->dirroot . '/mod/assign/feedback/author/classes/controllers/feedback_controller.php');
+require_once($CFG->dirroot . '/mod/assign/feedback/author/classes/utilities.php');
+
+use assign_feedback_author\utilities;
+use assign_feedback_author\feedback_controller;
+
 /**
  * Library class for author feedback plugin extending feedback plugin base class.
  *
@@ -35,13 +41,13 @@ define('ASSIGNFEEDBACK_COMMENTS', 'comments');
  * @copyright 2013 Rene Roepke
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class assign_feedback_author extends assign_feedback_plugin
-{
+class assign_feedback_author extends assign_feedback_plugin {
 
     /**
      * Get the name of the author feedback plugin.
      *
      * @return string
+     * @throws coding_exception
      */
     public function get_name() {
         return get_string('author', 'assignfeedback_author');
@@ -53,6 +59,7 @@ class assign_feedback_author extends assign_feedback_plugin
      * @param MoodleQuickForm $mform
      *            The form to add elements to
      * @return void
+     * @throws coding_exception
      */
     public function get_settings(MoodleQuickForm $mform) {
         $defaultnotification = $this->get_config('notification');
@@ -85,6 +92,8 @@ class assign_feedback_author extends assign_feedback_plugin
      * @param string $subtype
      *            subtype of the plugin
      * @return boolean true if plugin is enabled
+     * @throws coding_exception
+     * @throws dml_exception
      */
     private function is_plugin_enabled($name, $subtype) {
         global $DB;
@@ -109,20 +118,25 @@ class assign_feedback_author extends assign_feedback_plugin
      * @param int $userid
      *            The userid we are currently grading
      * @return bool true if elements were added to the form
+     * @throws coding_exception
+     * @throws dml_exception
      */
     public function get_form_elements_for_user($grade, MoodleQuickForm $mform, stdClass $data, $userid) {
+
         if (!$this->is_plugin_enabled('author', 'assignsubmission')) {
             $mform->addElement('static', '', '', get_string('submissionpluginmissing', 'assignfeedback_author'));
             return true;
         }
 
         $assignment = $this->assignment->get_instance();
+        $feedbackcontroller = new feedback_controller($this->assignment);
+
         $submission = $this->get_submission($userid, $assignment->id);
         if ($submission) {
-            $authorsubmission = $this->get_author_submission($assignment->id, $submission->id);
+            $authorsubmission = $feedbackcontroller->get_author_submission($assignment->id, $submission->id);
             if ($authorsubmission) {
                 $coauthors = $authorsubmission->author . ',' . $authorsubmission->authorlist;
-                $coauthors = $this->get_author_array($coauthors, true);
+                $coauthors = utilities::get_author_array($coauthors, true, $this->assignment);
                 $userarr[$userid] = '';
                 $coauthors = array_diff_key($coauthors, $userarr);
                 $mform->addElement('checkbox', 'assignfeedbackauthor_feedbackforall', '',
@@ -164,9 +178,9 @@ class assign_feedback_author extends assign_feedback_plugin
                     'checked');
             }
             if ($grade) {
-                $authorfeedback = $this->get_author_feedback($assignment->id, $grade->id);
+                $authorfeedback = $feedbackcontroller->get_author_feedback($assignment->id, $grade->id);
                 if ($authorfeedback) {
-                    $coauthors = $this->get_author_array($authorfeedback->coauthors, true);
+                    $coauthors = utilities::get_author_array($authorfeedback->coauthors, true, $this->assignment);
                     foreach ($coauthors as $key => $value) {
                         $mform->setDefault('assignfeedbackauthor_coauthors[' . $key . ']', 'checked');
                     }
@@ -201,14 +215,17 @@ class assign_feedback_author extends assign_feedback_plugin
      * @param stdClass $grade
      * @param stdClass $data
      * @return bool
+     * @throws coding_exception
+     * @throws dml_exception
      */
     public function save(stdClass $grade, stdClass $data) {
+        $feedbackcontroller = new feedback_controller($this->assignment);
         $notification = $this->get_config('notification');
         if ($grade) {
             if (isset($data->assignfeedbackauthor_feedbackforall) && $data->assignfeedbackauthor_feedbackforall == 1) {
                 $submission = $this->get_submission($grade->userid, $grade->assignment);
                 if ($submission) {
-                    $authorsubmission = $this->get_author_submission($grade->assignment, $submission->id);
+                    $authorsubmission = $feedbackcontroller->get_author_submission($grade->assignment, $submission->id);
                     if ($authorsubmission) {
                         $mode = 0;
                         $coauthors = $authorsubmission->author . ',' . $authorsubmission->authorlist;
@@ -225,13 +242,13 @@ class assign_feedback_author extends assign_feedback_plugin
                             $this->send_notifications($grade->userid, $coauthors);
                         }
                         if ($this->assignment->get_instance()->markingworkflow == 1) {
-                            $this->set_user_flag($coauthors, $data->workflowstate, $data->allocatedmarker);
+                            $feedbackcontroller->set_user_flag($coauthors, $data->workflowstate, $data->allocatedmarker);
                         }
                         if ($this->is_plugin_enabled(ASSIGNFEEDBACK_COMMENTS, 'assignfeedback')) {
-                            $this->set_comments_feedback_for_coauthors($coauthors, $data, $authorsubmission->author);
+                            $feedbackcontroller->set_comments_feedback_for_coauthors($coauthors, $data, $authorsubmission->author);
                         }
                         $coauthors[] = $grade->userid;
-                        $this->set_author_feedback_for_coauthors($coauthors, $mode, $grade);
+                        $feedbackcontroller->set_author_feedback_for_coauthors($coauthors, $mode, $grade);
                         return true;
                     }
                 }
@@ -251,17 +268,17 @@ class assign_feedback_author extends assign_feedback_plugin
                 $assign->cmidnumber = $this->assignment->get_course_module()->idnumber;
                 assign_update_grades($assign);
                 if ($this->is_plugin_enabled(ASSIGNFEEDBACK_COMMENTS, 'assignfeedback')) {
-                    $this->set_comments_feedback_for_coauthors($coauthors, $data, $grade->userid);
+                    $feedbackcontroller->set_comments_feedback_for_coauthors($coauthors, $data, $grade->userid);
                 }
                 if ($this->assignment->get_instance()->markingworkflow == 1) {
-                    $this->set_user_flag($coauthors, $data->workflowstate, $data->allocatedmarker);
+                    $feedbackcontroller->set_user_flag($coauthors, $data->workflowstate, $data->allocatedmarker);
                 }
                 $coauthors[] = $grade->userid;
-                $this->set_author_feedback_for_coauthors($coauthors, $mode, $grade);
+                $feedbackcontroller->set_author_feedback_for_coauthors($coauthors, $mode, $grade);
                 return true;
             } else if (isset($data->assignfeedbackauthor_feedbackforno) && $data->assignfeedbackauthor_feedbackforno == 1) {
                 $mode = 2;
-                $this->set_author_feedback($grade->userid, '', $mode, $grade);
+                $feedbackcontroller->set_author_feedback($grade->userid, '', $mode, $grade);
                 return true;
             }
         }
@@ -269,107 +286,12 @@ class assign_feedback_author extends assign_feedback_plugin
     }
 
     /**
-     * Set the user flags for the grading workflow
-     *
-     * @param int[] $coauthors
-     * @param string $workflowstate
-     */
-    private function set_user_flag($coauthors, $workflowstate, $allocatedmarker) {
-        foreach ($coauthors as $coauthor) {
-            $flags = $this->assignment->get_user_flags($coauthor, true);
-            $flags->workflowstate = $workflowstate;
-            $flags->allocatedmarker = $allocatedmarker;
-            $this->assignment->update_user_flags($flags);
-        }
-    }
-
-    /**
-     * Set author feedback records for all coauthors
-     *
-     * @param int[] $coauthors
-     * @param int $mode
-     * @param stdClass $grade
-     */
-    private function set_author_feedback_for_coauthors($coauthors, $mode, $grade) {
-        foreach (array_values($coauthors) as $coauthor) {
-            $userarr = array(
-                $coauthor
-            );
-            $users = array_diff($coauthors, $userarr);
-            $this->set_author_feedback($coauthor, implode(',', $users), $mode, $grade);
-        }
-    }
-
-    /**
-     * Set comment feedback records for all coauthors
-     *
-     * @param int[] $coauthors
-     * @param stdClass $data
-     */
-    private function set_comments_feedback_for_coauthors($coauthors, $data, $gradeuserid) {
-        global $DB;
-        if (isset($data->assignfeedbackcomments_editor)) {
-            $assignment = $this->assignment->get_instance()->id;
-            $text = $data->assignfeedbackcomments_editor['text'];
-            $format = $data->assignfeedbackcomments_editor['format'];
-            foreach ($coauthors as $coauthor) {
-                assign_update_grades($this->assignment->get_instance(), $coauthor);
-                $grade = $DB->get_record('assign_grades', array(
-                    'assignment' => $assignment,
-                    'userid' => $coauthor
-                ));
-                $commentsfeedback = $DB->get_record('assignfeedback_' . ASSIGNFEEDBACK_COMMENTS, array(
-                    'assignment' => $assignment,
-                    'grade' => $grade->id
-                ));
-                if ($commentsfeedback) {
-                    $commentsfeedback->commenttext = $text;
-                    $commentsfeedback->commentformat = $format;
-                    $DB->update_record('assignfeedback_' . ASSIGNFEEDBACK_COMMENTS, $commentsfeedback);
-                } else {
-                    $commentsfeedback = new stdClass();
-                    $commentsfeedback->assignment = $assignment;
-                    $commentsfeedback->grade = $grade->id;
-                    $commentsfeedback->commenttext = $text;
-                    $commentsfeedback->commentformat = $format;
-                    $DB->insert_record('assignfeedback_' . ASSIGNFEEDBACK_COMMENTS, $commentsfeedback);
-                }
-                $gradeitem = $DB->get_record('grade_items', array(
-                    'iteminstance' => $assignment,
-                    'itemmodule' => 'assign'
-                ));
-                if ($DB->count_records('grade_grades', array(
-                        'itemid' => $gradeitem->id,
-                        'userid' => $coauthor
-                    )) == 0
-                ) {
-                    $record = $DB->get_record('grade_grades', array(
-                        'itemid' => $gradeitem->id,
-                        'userid' => $gradeuserid
-                    ));
-                    $record->id = null;
-                    $record->userid = $coauthor;
-                    $record->feedback = $text;
-                    $record->feedbackformat = $format;
-                    $DB->insert_record('grade_grades', $record);
-                } else {
-                    $entry = $DB->get_record('grade_grades', array(
-                        'itemid' => $gradeitem->id,
-                        'userid' => $coauthor
-                    ));
-                    $entry->feedback = $text;
-                    $entry->feedbackformat = $format;
-                    $DB->update_record('grade_grades', $entry);
-                }
-            }
-        }
-    }
-
-    /**
      * Send notifications to all coauthors
      *
      * @param int $author
      * @param int[] $coauthors
+     * @throws coding_exception
+     * @throws dml_exception
      */
     private function send_notifications($author, $coauthors) {
         global $CFG, $USER;
@@ -390,7 +312,9 @@ class assign_feedback_author extends assign_feedback_plugin
             $userarr = array(
                 $userto->id
             );
-            $a->coauthors = implode(', ', $this->get_author_array(implode(',', $coauthors)));
+            $a->coauthors = implode(', ', utilities::get_author_array(implode(',', $coauthors),
+                    false,
+                    $this->assignment));
             $message = $subject . ': ' . get_string('message', 'assignfeedback_author', $a);
             $eventdata = new stdClass();
             $eventdata->modulename = 'assign';
@@ -413,39 +337,11 @@ class assign_feedback_author extends assign_feedback_plugin
     }
 
     /**
-     * Set author feedback record for user
-     *
-     * @param int $userid
-     * @param string $coauthors
-     * @param int $mode
-     * @param stdClass $grade
-     */
-    private function set_author_feedback($userid, $coauthors, $mode, $grade) {
-        global $DB;
-        $assigngrade = $DB->get_record('assign_grades', array(
-            'assignment' => $grade->assignment,
-            'userid' => $userid
-        ));
-        $authorfeedback = $this->get_author_feedback($grade->assignment, $assigngrade->id);
-        if ($authorfeedback) {
-            $authorfeedback->mode = $mode;
-            $authorfeedback->coauthors = $coauthors;
-            $DB->update_record('assignfeedback_author', $authorfeedback);
-        } else {
-            $authorfeedback = new stdClass();
-            $authorfeedback->assignment = $grade->assignment;
-            $authorfeedback->grade = $assigngrade->id;
-            $authorfeedback->mode = $mode;
-            $authorfeedback->coauthors = $coauthors;
-            $DB->insert_record('assignfeedback_author', $authorfeedback);
-        }
-    }
-
-    /**
      * Set assign grade records for all coauthors
      *
      * @param int[] $coauthors
      * @param stdClass $grade
+     * @throws dml_exception
      */
     private function set_assign_grade_for_coauthors($coauthors, $grade) {
         foreach ($coauthors as $coauthor) {
@@ -459,6 +355,7 @@ class assign_feedback_author extends assign_feedback_plugin
      * @param int $assignment
      * @param int $userid
      * @return Ambigous <mixed, stdClass, false, boolean>
+     * @throws dml_exception
      */
     private function get_assign_grade($assignment, $userid) {
         global $DB;
@@ -473,6 +370,7 @@ class assign_feedback_author extends assign_feedback_plugin
      *
      * @param int $userid
      * @param stdClass $grade
+     * @throws dml_exception
      */
     private function set_assign_grade($userid, $grade) {
         global $DB;
@@ -504,9 +402,12 @@ class assign_feedback_author extends assign_feedback_plugin
      * @param bool $showviewlink
      *            - Set to true to show a link to see the full list of files
      * @return string
+     * @throws coding_exception
+     * @throws dml_exception
      */
     public function view_summary(stdClass $grade, & $showviewlink) {
-        $authorfeedback = $this->get_author_feedback($grade->assignment, $grade->id);
+        $feedbackcontroller = new feedback_controller($this->assignment);
+        $authorfeedback = $feedbackcontroller->get_author_feedback($grade->assignment, $grade->id);
         // Always show the view link.
         $showviewlink = false;
 
@@ -514,8 +415,8 @@ class assign_feedback_author extends assign_feedback_plugin
             if ($authorfeedback->coauthors == '') {
                 return get_string('summary_nocoauthors', 'assignfeedback_author');
             }
-            $author = implode(', ', $this->get_author_array($grade->userid, true));
-            $coauthors = implode(', ', $this->get_author_array($authorfeedback->coauthors, true));
+            $author = implode(', ', utilities::get_author_array($grade->userid, true, $this->assignment));
+            $coauthors = implode(', ', utilities::get_author_array($authorfeedback->coauthors, true, $this->assignment));
             $summary = get_string('summary_graded', 'assignfeedback_author');
             $summary .= ': ';
             $summary .= $author;
@@ -533,6 +434,8 @@ class assign_feedback_author extends assign_feedback_plugin
      *
      * @param stdClass $grade
      * @return string
+     * @throws coding_exception
+     * @throws dml_exception
      */
     public function view(stdClass $grade) {
         $showviewlink = true;
@@ -543,6 +446,8 @@ class assign_feedback_author extends assign_feedback_plugin
      * The assignment has been deleted - cleanup.
      *
      * @return bool
+     * @throws coding_exception
+     * @throws dml_exception
      */
     public function delete_instance() {
         global $DB;
@@ -558,43 +463,18 @@ class assign_feedback_author extends assign_feedback_plugin
      * Return true if there is no author submission.
      *
      * @param stdClass $grade
+     * @return bool
+     * @throws dml_exception
      */
     public function is_empty(stdClass $grade) {
+        $feedbackcontroller = new feedback_controller($this->assignment);
         $submission = $this->get_submission($grade->userid, $grade->assignment);
         if ($submission) {
-            $authorsubmission = $this->get_author_submission($grade->assignment, $submission->id);
-            $authorfeedback = $this->get_author_feedback($grade->assignment, $grade->id);
+            $authorsubmission = $feedbackcontroller->get_author_submission($grade->assignment, $submission->id);
+            $authorfeedback = $feedbackcontroller->get_author_feedback($grade->assignment, $grade->id);
             return !($authorfeedback);
         }
         return true;
-    }
-
-    /**
-     * Get the author ids and names as an array
-     *
-     * @param string $ids
-     * @return array
-     */
-    private function get_author_array($ids, $link = false) {
-        global $DB, $CFG;
-        if ($ids != '') {
-            $ids = explode(',', $ids);
-            $selectedauthors = array();
-            foreach ($ids as $id) {
-                $userrec = $DB->get_record('user', array(
-                    'id' => $id
-                ));
-                if ($link) {
-                    $url = $CFG->wwwroot . '/user/view.php?id=' . $userrec->id . '&course=' . $this->assignment->get_course()->id;
-                    $selectedauthors[$userrec->id] = "<a href='" . $url . "'>" . fullname($userrec) . "</a>";
-                } else {
-                    $selectedauthors[$userrec->id] = fullname($userrec);
-                }
-            }
-            return $selectedauthors;
-        } else {
-            return array();
-        }
     }
 
     /**
@@ -603,42 +483,13 @@ class assign_feedback_author extends assign_feedback_plugin
      * @param int $userid
      * @param int $assignment
      * @return Ambigous <mixed, stdClass, false, boolean>
+     * @throws dml_exception
      */
     private function get_submission($userid, $assignment) {
         global $DB;
         return $DB->get_record('assign_submission', array(
             'userid' => $userid,
             'assignment' => $assignment
-        ));
-    }
-
-    /**
-     * Get the author submission record of a submission for an assignment
-     *
-     * @param int $assignment
-     * @param int $submission
-     * @return Ambigous <mixed, stdClass, false, boolean>
-     */
-    private function get_author_submission($assignment, $submission) {
-        global $DB;
-        return $DB->get_record('assignsubmission_author', array(
-            'assignment' => $assignment,
-            'submission' => $submission
-        ));
-    }
-
-    /**
-     * Get the author feedback record of a grade for an assignment
-     *
-     * @param int $assignment
-     * @param int $grade
-     * @return Ambigous <mixed, stdClass, false, boolean>
-     */
-    private function get_author_feedback($assignment, $grade) {
-        global $DB;
-        return $DB->get_record('assignfeedback_author', array(
-            'assignment' => $assignment,
-            'grade' => $grade
         ));
     }
 }
