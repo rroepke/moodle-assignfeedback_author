@@ -23,6 +23,8 @@
  * @copyright   2013 Rene Roepke
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+defined('MOODLE_INTERNAL') || die();
+
 $settings->add(new admin_setting_configcheckbox('assignfeedback_author/default',
     new lang_string('default', 'assignfeedback_author'),
     new lang_string('default_help', 'assignfeedback_author'), 0));
