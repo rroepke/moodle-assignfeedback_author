@@ -25,12 +25,12 @@
  */
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version = 2016032500;
+$plugin->version = 2018072100;
 $plugin->requires = 2013110500;
 $plugin->component = 'assignfeedback_author';
 $plugin->maturity = MATURITY_STABLE;
-$plugin->release = 'v3.0';
+$plugin->release = 'v3.5';
 
 $plugin->dependencies = array(
-    'assignsubmission_author' => 2016032500
+    'assignsubmission_author' => 2018072100
 );
