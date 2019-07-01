@@ -54,7 +54,7 @@ class provider implements
      * @param  collection $collection A list of information to add to.
      * @return collection Return the collection after adding to it.
      */
-    public static function _get_metadata(collection $collection) : collection {
+    public static function _get_metadata(collection $collection) {
         $collection->add_database_table(
             'assignsubmission_author',
             [
