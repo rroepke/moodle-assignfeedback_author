@@ -354,7 +354,7 @@ class assign_feedback_author extends assign_feedback_plugin {
      *
      * @param int $assignment
      * @param int $userid
-     * @return Ambigous <mixed, stdClass, false, boolean>
+     * @return mixed <stdClass or false>
      * @throws dml_exception
      */
     private function get_assign_grade($assignment, $userid) {
@@ -482,7 +482,7 @@ class assign_feedback_author extends assign_feedback_plugin {
      *
      * @param int $userid
      * @param int $assignment
-     * @return Ambigous <mixed, stdClass, false, boolean>
+     * @return mixed <stdClass or false>
      * @throws dml_exception
      */
     private function get_submission($userid, $assignment) {

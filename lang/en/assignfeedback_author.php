@@ -44,4 +44,10 @@ $string['enabled_help'] = 'If enabled, the teacher will be able to upload files 
 
 $string['pluginname'] = 'Author groups feedback';
 
-
+// Privacy API.
+$string['privacy:metadata:assignfeedback_author'] = 'Stores feedback for a submission by a self-chosen group of students.';
+$string['privacy:assignfeedback_author:id'] = 'Unique identifier of the row.';
+$string['privacy:assignfeedback_author:assignment'] = 'ID of corresponding assignment in the "assign" table';
+$string['privacy:assignfeedback_author:grade'] = 'ID of corresponding assignment in the "assign_grades" table';
+$string['privacy:assignfeedback_author:mode'] = 'The mode in which the feedback was given. 0 is for all, 1 is for selected, 2 is for one student only.';
+$string['privacy:assignfeedback_author:coauthors'] = 'Comma-separated list of studend IDs the  student declared as co-authors';
