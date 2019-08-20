@@ -306,17 +306,14 @@ class assign_feedback_author extends assign_feedback_plugin {
         $a->assignmenturl = $CFG->wwwroot . '/mod/assign/view.php?id=' . $this->assignment->get_course_module()->id;
         $a->grader = fullname($USER);
         $subject = get_string('subject', 'assignfeedback_author', $a);
-        $message = $subject . ': ' . get_string('message', 'assignfeedback_author', $a);
+
         foreach ($coauthors as $coauthor) {
             $userto = core_user::get_user($coauthor);
-            $userarr = array(
-                $userto->id
-            );
             $a->coauthors = implode(', ', utilities::get_author_array(implode(',', $coauthors),
                     false,
                     $this->assignment));
             $message = $subject . ': ' . get_string('message', 'assignfeedback_author', $a);
-            $eventdata = new stdClass();
+            $eventdata = new \core\message\message;
             $eventdata->modulename = 'assign';
             $eventdata->userfrom = $user;
             $eventdata->userto = $userto;
@@ -354,7 +351,7 @@ class assign_feedback_author extends assign_feedback_plugin {
      *
      * @param int $assignment
      * @param int $userid
-     * @return Ambigous <mixed, stdClass, false, boolean>
+     * @return mixed <stdClass or false>
      * @throws dml_exception
      */
     private function get_assign_grade($assignment, $userid) {
@@ -482,7 +479,7 @@ class assign_feedback_author extends assign_feedback_plugin {
      *
      * @param int $userid
      * @param int $assignment
-     * @return Ambigous <mixed, stdClass, false, boolean>
+     * @return mixed <stdClass or false>
      * @throws dml_exception
      */
     private function get_submission($userid, $assignment) {

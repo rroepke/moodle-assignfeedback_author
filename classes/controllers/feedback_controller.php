@@ -72,7 +72,7 @@ class feedback_controller {
      *
      * @param int $assignment
      * @param int $grade
-     * @return Ambigous <mixed, stdClass, false, boolean>
+     * @return <stdClass or false>
      * @throws \dml_exception
      */
     public function get_author_feedback($assignment, $grade) {
@@ -122,8 +122,7 @@ class feedback_controller {
      * @param int[] $coauthors
      * @param stdClass $data
      * @param $gradeuserid
-     * @throws coding_exception
-     * @throws dml_exception
+     * @throws \coding_exception
      * @throws \dml_exception
      */
     public function set_comments_feedback_for_coauthors($coauthors, $data, $gradeuserid) {
@@ -190,7 +189,7 @@ class feedback_controller {
      *
      * @param int $assignment
      * @param int $submission
-     * @return Ambigous <mixed, stdClass, false, boolean>
+     * @return <stdClass or false>
      * @throws \dml_exception
      */
     public function get_author_submission($assignment, $submission) {

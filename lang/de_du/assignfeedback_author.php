@@ -45,4 +45,10 @@ $string['enabled_help'] = 'Bewerter/innen können Feedback auf Co-Autoren übert
 
 $string['pluginname'] = 'Feedback für Autorengruppen';
 
-
+// Privacy API.
+$string['privacy:metadata:assignfeedback_author'] = 'Speichert Feedback für eine Einreichung durch eine selbst gewählte Gruppe von Studenten';
+$string['privacy:assignfeedback_author:id'] = 'Eindeutige Kennung der Zeile';
+$string['privacy:assignfeedback_author:assignment'] = 'ID der entsprechenden Zuordnung in der Tabelle "assign"';
+$string['privacy:assignfeedback_author:grade'] = 'ID der entsprechenden Zuordnung in der Tabelle "assign_grades"';
+$string['privacy:assignfeedback_author:mode'] = 'Der Modus, in dem das Feedback gegeben wurde. 0 ist für alle, 1 ist für ausgewählte, 2 ist nur für einen Student.';
+$string['privacy:assignfeedback_author:coauthors'] = 'Kommagetrennte Liste der Studenten-IDs, die der Student als Co-Autoren deklariert hat';
